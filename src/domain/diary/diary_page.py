@@ -1,22 +1,24 @@
+from datetime import date
+
+from pydantic import BaseModel
+from pydantic import Field
 
 from domain.notion import NotionPage
-from pydantic import BaseModel, Field, field_validator
-from datetime import date
 
 COLUMN_DIARY_DATE = "diary_date"
 COLUMN_TITLE = "title"
 
+
 class DiaryProperties(BaseModel):
     diary_date: date | None = Field(..., description="いつの日記なのかを表す日付.")
     title: str = Field(..., description="日記のタイトル.")
-    
+
 
 class DiaryPage(NotionPage):
     properties: DiaryProperties = Field(..., description="日記DBのカラム.")
-    
-    
+
+
 class DiaryPageFactory:
-    
     def from_notion(self, obj: dict) -> DiaryPage:
         assert obj["object"] == "page"
         return DiaryPage(
@@ -25,8 +27,7 @@ class DiaryPageFactory:
             properties=DiaryProperties(
                 title=self.extract_title(obj),
                 diary_date=self.extract_date(obj),
-                
-            )
+            ),
         )
 
     def extract_title(self, obj: dict) -> str:
@@ -43,7 +44,7 @@ class DiaryPageFactory:
         properties = obj.get("properties", {})
         if COLUMN_DIARY_DATE not in properties:
             return None
-            
+
         prop = properties[COLUMN_DIARY_DATE]
         if prop.get("type") == "date" and prop.get("date"):
             s = prop["date"].get("start")

@@ -1,2 +1,2 @@
-from .diary import * 
-from .notion import *
+from .diary import *  # noqa
+from .notion import *  # noqa

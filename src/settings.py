@@ -1,5 +1,6 @@
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,3 +11,4 @@ class Settings(BaseSettings):
 
     notion_api_key: str = Field(..., description="NotionのAPI KEY")
     diary_database_id: str = Field(..., description="NotionのデータベースID")
+    gemini_api_key: str = Field(..., description="GeminiのAPI KEY")

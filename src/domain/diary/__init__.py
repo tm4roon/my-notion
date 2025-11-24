@@ -1,6 +1,5 @@
-from .diary import Diary
-from .diary_entry import DiaryEntry
-from .diary_factory import DiaryFactory
-from .diary_page import DiaryPage, DiaryProperties, DiaryPageFactory
+from .diary import Diary, DiaryFactory  # noqa
+from .diary_entry import DiaryEntry, DiaryEntryFactory  # noqa
+from .diary_page import DiaryPage, DiaryProperties, DiaryPageFactory  # noqa
 
-from .interface_diary_repository import IDiaryRepository
+from .interface_diary_repository import IDiaryRepository  # noqa

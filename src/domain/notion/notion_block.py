@@ -1,6 +1,9 @@
-from pydantic import BaseModel, Field
-from .notion_block_type import NotionBlockType
 from typing import Any
+
+from pydantic import BaseModel
+from pydantic import Field
+
+from .notion_block_type import NotionBlockType
 
 
 class NotionBlock(BaseModel):

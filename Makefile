@@ -1,6 +1,6 @@
 .PHONY: x fmt lint fix
 
-x: fmt
+x: fix fmt
 
 fmt:
 	uv run ruff format .

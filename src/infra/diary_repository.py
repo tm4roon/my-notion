@@ -1,11 +1,12 @@
-import httpx
+from collections.abc import AsyncGenerator
 from datetime import date
-from typing import AsyncGenerator
 
-import re
+import httpx
 
-from settings import Settings
-from domain.diary import Diary, DiaryEntry, DiaryPageFactory, DiaryFactory, DiaryPage, DiaryProperties, IDiaryRepository
+from domain.diary import Diary
+from domain.diary import DiaryFactory
+from domain.diary import IDiaryRepository
+
 
 class DiaryRepository(IDiaryRepository):
     BASE_URL = "https://api.notion.com/v1"
@@ -31,7 +32,7 @@ class DiaryRepository(IDiaryRepository):
                 continue
             children = await self.__get_children(page_id)
             yield self._factory.from_notion(page=page, children=children)
-            
+
     async def __get_children(self, page_id: str) -> list[dict]:
         """ページのコンテンツ（ブロック）とプロパティを取得"""
         async with httpx.AsyncClient(timeout=self._timeout) as client:
@@ -39,8 +40,7 @@ class DiaryRepository(IDiaryRepository):
             res.raise_for_status()
         data = res.json()
         return data["results"]
-    
-       
+
     async def __get_pages(
         self,
         start: date | None = None,
@@ -80,8 +80,6 @@ class DiaryRepository(IDiaryRepository):
                 if not data.get("has_more"):
                     break
                 cursor = data["next_cursor"]
-
-
 
     # async def create(self, diary: Diary) -> str:
     #     """日記を作成し、作成されたページIDを返す"""

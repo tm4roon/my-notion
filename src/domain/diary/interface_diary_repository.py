@@ -1,19 +1,21 @@
-from abc import ABC, abstractmethod
-from typing import AsyncGenerator
-
-from .diary import Diary
+from abc import ABC
+from abc import abstractmethod
+from collections.abc import AsyncGenerator
 from datetime import date
 
-class IDiaryRepository(ABC):
-    ...
-    # @abstractmethod
-    # async def get_page(self, page_id: str) -> dict:
-    #     raise NotImplementedError
+from domain.diary import Diary
 
-    # @abstractmethod
-    # async def get_pages(self, start: date | None, end: date | None = None) -> dict:
-    #     raise NotImplementedError
-    
+
+class IDiaryRepository(ABC):
+    @abstractmethod
+    async def get(
+        self,
+        start: date | None = None,
+        end: date | None = None,
+    ) -> AsyncGenerator[Diary, None]:
+        """日記を取得"""
+        raise NotImplementedError
+
     # @abstractmethod
     # async def create(self, diary: Diary) -> str:
     #     """日記を作成し、作成されたページIDを返す"""

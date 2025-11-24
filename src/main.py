@@ -1,11 +1,11 @@
-import os
+import asyncio
+from datetime import date
+
+from infra.diary_repository import DiaryRepository
+from settings import Settings
 
 
 async def main():
-    from datetime import date
-    from settings import Settings
-    from infra.diary_repository import DiaryRepository
-
     settings = Settings()
     diary_repository = DiaryRepository(
         api_key=settings.notion_api_key,
@@ -17,7 +17,6 @@ async def main():
     async for diary in diary_repository.get(start, end):
         print(diary.diary_date, diary.title)
 
-if __name__ == "__main__":
-    import asyncio
 
+if __name__ == "__main__":
     asyncio.run(main())
