@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from domain.notion import NotionBlockType
+from domain.language import Language
 
 from .diary_entry import DiaryEntry
 from .diary_entry import DiaryEntryFactory
@@ -13,7 +14,7 @@ from .diary_page import DiaryPageFactory
 
 class Diary(BaseModel):
     """日記ドメインオブジェクト"""
-
+    language: str = Field(default=Language.EN, description="日記の言語.")
     title: str = Field(..., description="日記のタイトル.")
     diary_date: date | None = Field(None, description="日記の日付")
     original_entries: list[DiaryEntry] = Field(..., description="日記のエントリのリスト.")
