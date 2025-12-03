@@ -1,0 +1,1 @@
+from .interface_diary_repository import IDiaryRepository  # noqa
