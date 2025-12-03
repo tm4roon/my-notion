@@ -1,1 +1,1 @@
-from .parse_diary import * # noqa
+from .diary_parser import * # noqa
