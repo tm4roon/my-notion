@@ -5,7 +5,7 @@ import httpx
 
 from domain.diary import Diary
 from domain.diary import DiaryFactory
-from domain.diary import IDiaryRepository
+from domain.interface import IDiaryRepository
 
 
 class DiaryRepository(IDiaryRepository):
