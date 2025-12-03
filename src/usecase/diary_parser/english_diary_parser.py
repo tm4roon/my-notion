@@ -31,9 +31,9 @@ class EnglishDiaryParser:
 
     def parse(self, entry: DiaryEntry) -> ParsedDiaryEntry:
         """エントリのテキストを文単位に分割し、lemmaとPOSタグも抽出"""
-        text = entry.text
+        content = entry.content
         # Stanzaで文に分割
-        doc = self.nlp(text)
+        doc = self.nlp(content)
         sentences = [
             " ".join([w.text.lower() for w in s.words])
             for s in doc.sentences
