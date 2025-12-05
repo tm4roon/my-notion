@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from infra.gemini_client import GeminiClient
 from domain.diary.diary import Diary
 from domain.diary.diary_entry import DiaryEntry
-from domain.grammatical_error import GrammaticalError
+from domain.diary_feedback import GrammaticalError
 
 
 
@@ -71,8 +71,8 @@ class GeminiBasedGED:
         errs = [] 
         for original_entry, revised_entry in zip(diary.original_entries, diary.revised_entries):
 
-            original_entry = original_entry.content.replace("’", "'").replace("\n", '')
-            revised_entry = revised_entry.content.replace("’", "'").replace("\n", '')
+            original_entry = self.preprocess_entry(original_entry)
+            revised_entry = self.preprocess_entry(revised_entry)
 
             contents = input_prompt.format(
                 entry_title=original_entry.title,
@@ -86,8 +86,9 @@ class GeminiBasedGED:
                     response_schema=OutputSchema,
                 ),
             )
-            import pdb; pdb.set_trace()
             errs.extend(res.parsed.grammatical_errors)
-
-        import pdb; pdb.set_trace()
         return errs
+
+    @staticmethod 
+    def preprocess_entry(entry: DiaryEntry) -> str:
+        return entry.content.replace("’", "'").replace("\n", '')
