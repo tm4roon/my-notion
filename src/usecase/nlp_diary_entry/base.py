@@ -3,7 +3,7 @@ from domain.diary.diary_entry import DiaryEntry
 from domain.diary.parsed_diary_entry import ParsedDiaryEntry
 
 
-class BaseDiaryEntryParser(ABC):
+class NLPDiaryEntryBase(ABC):
 
 
     @abstractmethod

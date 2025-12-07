@@ -5,8 +5,9 @@ from pydantic import BaseModel, Field
 from infra.gemini_client import GeminiClient
 from domain.diary.diary_entry_revision import DiaryEntryRevision
 from domain.diary_feedback import GrammaticalError
+from domain.diary_feedback.diary_entry_error_analysis import DiaryEntryErrorAnalysis
 
-from .base import BaseGED
+from .base import DetectGrammaticalErrorBase
 
 
 DEFAULT_SYSTEM_PROMPT = """
@@ -52,7 +53,7 @@ class OutputSchema(BaseModel):
         description="検出された文法エラーのリスト."
     )
 
-class GeminiBasedGED(BaseGED):
+class DetectGrammaticalErrorGemini(DetectGrammaticalErrorBase):
 
     def __init__(
         self, 
@@ -65,7 +66,7 @@ class GeminiBasedGED(BaseGED):
         self.user_prompt_template = user_prompt_template if user_prompt_template else DEFAULT_USER_PROMPT_TEMPLATE
 
 
-    def invoke(self, revision: DiaryEntryRevision) -> list[GrammaticalError]:
+    def invoke(self, revision: DiaryEntryRevision) -> DiaryEntryErrorAnalysis:
         input_prompt = f"{self.system_prompt}\n{self.user_prompt_template}"
 
         original_entry = self.preprocess_entry_content(revision.origin_content)
@@ -83,7 +84,7 @@ class GeminiBasedGED(BaseGED):
                 response_schema=OutputSchema,
             ),
         )
-        return res.parsed.grammatical_errors
+        return DiaryEntryErrorAnalysis(errors=res.parsed.grammatical_errors)
 
     @staticmethod 
     def preprocess_entry_content(content: str) -> str:

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from domain.diary.diary_entry_revision import DiaryEntryRevision
 from domain.diary_feedback import GrammaticalError
 
-class BaseGED(ABC):
+class DetectGrammaticalErrorBase(ABC):
 
     @abstractmethod
     def invoke(self, diary: DiaryEntryRevision) -> list[GrammaticalError]:

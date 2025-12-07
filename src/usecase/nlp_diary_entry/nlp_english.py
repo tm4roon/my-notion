@@ -2,7 +2,10 @@ import stanza
 from domain.diary.diary_entry_revision import DiaryEntry
 from domain.diary.parsed_diary_entry import ParsedDiaryEntry
 
-class EnglishDiaryEntryParser:
+from .base import NLPDiaryEntryBase
+
+
+class NLPDiaryEntryEnglish(NLPDiaryEntryBase):
     def __init__(self):
         # Stanzaのパイプラインを初期化（トークン化、品詞タグ付け、lemmatizationを含む）
         self.nlp = stanza.Pipeline(
