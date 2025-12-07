@@ -1,11 +1,10 @@
 import stanza
 from domain.diary.diary import Diary
-from domain.diary.diary_entry import DiaryEntry
-from domain.parsed_diary.parsed_diary import ParsedDiary
-from domain.parsed_diary.parsed_diary_entry import ParsedDiaryEntry
+from domain.diary.diary_entry_revision import DiaryEntry
+from domain.diary.parsed_diary_entry import ParsedDiaryEntry
 from domain.language import Language
 
-class EnglishDiaryParser:
+class EnglishDiaryEntryParser:
     def __init__(self):
         # Stanzaのパイプラインを初期化（トークン化、品詞タグ付け、lemmatizationを含む）
         self.nlp = stanza.Pipeline(
@@ -15,21 +14,7 @@ class EnglishDiaryParser:
             verbose=False
         )
 
-    def invoke(self, diary: Diary) -> ParsedDiary:
-        if diary.language != Language.EN:
-            raise ValueError("This parser only supports English diaries.")
-        parsed_original_entries = [self.parse(entry) for entry in diary.original_entries]
-        parsed_revised_entries = [self.parse(entry) for entry in diary.revised_entries]
-
-        return ParsedDiary(
-            title=diary.title,
-            diary_date=diary.diary_date,
-            original_entries=parsed_original_entries,
-            revised_entries=parsed_revised_entries,
-        )
-
-
-    def parse(self, entry: DiaryEntry) -> ParsedDiaryEntry:
+    def invoke(self, entry: DiaryEntry) -> ParsedDiaryEntry:
         """エントリのテキストを文単位に分割し、lemmaとPOSタグも抽出"""
         content = entry.content
         # Stanzaで文に分割
