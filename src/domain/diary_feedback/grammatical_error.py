@@ -6,3 +6,4 @@ class GrammaticalError(BaseModel):
     type: GrammaticalErrorType = Field(..., description="エラーの種類.")
     err: str = Field(..., description="エラー箇所のテキスト.")
     fix: str = Field(..., description="修正後のテキスト.")
+

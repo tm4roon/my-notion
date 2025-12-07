@@ -3,10 +3,10 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from infra.gemini_client import GeminiClient
-from domain.diary.diary import Diary
-from domain.diary.diary_entry import DiaryEntry
+from domain.diary.diary_entry_revision import DiaryEntryRevision
 from domain.diary_feedback import GrammaticalError
 
+from .base import BaseGED
 
 
 DEFAULT_SYSTEM_PROMPT = """
@@ -52,7 +52,7 @@ class OutputSchema(BaseModel):
         description="検出された文法エラーのリスト."
     )
 
-class GeminiBasedGED:
+class GeminiBasedGED(BaseGED):
 
     def __init__(
         self, 
@@ -65,30 +65,26 @@ class GeminiBasedGED:
         self.user_prompt_template = user_prompt_template if user_prompt_template else DEFAULT_USER_PROMPT_TEMPLATE
 
 
-    def invoke(self, diary: Diary) -> list[GrammaticalError]:
+    def invoke(self, revision: DiaryEntryRevision) -> list[GrammaticalError]:
         input_prompt = f"{self.system_prompt}\n{self.user_prompt_template}"
 
-        errs = [] 
-        for original_entry, revised_entry in zip(diary.original_entries, diary.revised_entries):
+        original_entry = self.preprocess_entry_content(revision.origin_content)
+        revised_entry = self.preprocess_entry_content(revision.revised_content)
 
-            original_entry = self.preprocess_entry(original_entry)
-            revised_entry = self.preprocess_entry(revised_entry)
-
-            contents = input_prompt.format(
-                entry_title=original_entry.title,
-                original_entry=original_entry,
-                revised_entry=revised_entry,
-            )
-            res = self.gemini_client.invoke(
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=OutputSchema,
-                ),
-            )
-            errs.extend(res.parsed.grammatical_errors)
-        return errs
+        contents = input_prompt.format(
+            entry_title=revision.title,
+            original_entry=original_entry,
+            revised_entry=revised_entry,
+        )
+        res = self.gemini_client.invoke(
+            contents=contents,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=OutputSchema,
+            ),
+        )
+        return res.parsed.grammatical_errors
 
     @staticmethod 
-    def preprocess_entry(entry: DiaryEntry) -> str:
-        return entry.content.replace("’", "'").replace("\n", '')
+    def preprocess_entry_content(content: str) -> str:
+        return content.replace("’", "'").replace("\n", '')
