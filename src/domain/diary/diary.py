@@ -7,19 +7,19 @@ from pydantic import Field
 from domain.notion import NotionBlockType
 from domain.language import Language
 
-from .diary_entry_revision import DiaryEntryRevision
-from .diary_entry_revision import DiaryEntryRevisionFactory
-
 from .diary_page import DiaryPageFactory
 
 
 class Diary(BaseModel):
     """日記ドメインオブジェクト"""
     page_id: str | None = Field(None, description="NotionページID")
-    language: str = Field(default=Language.EN, description="日記の言語.")
+
+    # properties
     title: str = Field(..., description="日記のタイトル.")
     diary_date: date | None = Field(None, description="日記の日付")
-    entries: list[DiaryEntryRevision] = Field(..., description="日記のエントリの修正前後差分のリスト")
+    language: str = Field(default=Language.EN, description="日記の言語.")
+    # content
+    content: str = Field(..., description="日記の内容（Markdown形式）.")
 
 
 
@@ -28,71 +28,55 @@ class DiaryFactory:
 
     def __init__(self):
         self.page_factory = DiaryPageFactory()
-        self.entry_factory = DiaryEntryRevisionFactory()
 
-    def from_notion(self, page: dict, children: dict) -> Diary:
+    def from_notion(self, page: dict, children: list[dict]) -> Diary:
         diary_page = self.page_factory.from_notion(page)
 
-        sections = self.split_by_heading1(children)
+        content = self._blocks_to_markdown(children)
 
-        origin_sections = [s for s in sections if self.is_origin_entry_section(s)]
-        revised_sections = [s for s in sections if self.is_revised_entry_section(s)]
-
-
-        if len(origin_sections) == 0 or len(revised_sections) == 0:
-            raise ValueError("No original entry section found in the diary page.")
-            
-        entries = self.entry_factory.from_notion(
-            origin_section=origin_sections[0],
-            revised_section=revised_sections[0],
-        )
         return Diary(
             page_id=page.get("id"),
             title=diary_page.properties.title,
             diary_date=diary_page.properties.diary_date,
-            entries=entries,
+            content=content,
         )
 
-    def split_by_heading1(self, children: list[dict]) -> list[dict]:
-        """Heading1 単位でブロックを分割"""
-        offsets = [idx for idx, block in enumerate(children) if block["type"] == NotionBlockType.HEADING1]
+    def _blocks_to_markdown(self, blocks: list[dict]) -> str:
+        """Notionブロックのリストをmarkdownに変換"""
+        markdown_lines = []
+        for block in blocks:
+            md_line = self._block_to_markdown(block)
+            if md_line:
+                markdown_lines.append(md_line)
+        return "\n".join(markdown_lines)
 
-        ret = []
-        for i in range(len(offsets)):
-            s = offsets[i]
-            t = offsets[i + 1] if i + 1 < len(offsets) else len(children)
-            ret.append(children[s:t])
-        return ret
+    def _block_to_markdown(self, block: dict) -> str:
+        """個々のNotionブロックをmarkdownに変換"""
+        block_type = block.get("type", "")
+        content = block.get(block_type, {})
 
-    def is_origin_entry_section(self, blocks: list[dict]) -> bool:
-        """'Entryのセクションかどうかを判定"""
-        head_block = blocks[0]
-        if head_block.get("type", "") != NotionBlockType.HEADING1:
-            return False
+        # rich_textから plain_text を取得
+        rich_text = content.get("rich_text", [])
+        text = "".join(rt.get("plain_text", "") for rt in rich_text)
 
-        heading = head_block.get(NotionBlockType.HEADING1, {})
-        rich_text = heading.get("rich_text", {})
-
-        plain_text = ""
-        for e in rich_text:
-            plain_text += e.get("plain_text", "")
-        if plain_text.strip() != "Entry":
-            return False
-        return True
-
-
-    def is_revised_entry_section(self, blocks: list[dict]) -> bool:
-        """'Entryのセクションかどうかを判定"""
-        head_block = blocks[0]
-        if head_block.get("type", "") != NotionBlockType.HEADING1:
-            return False
-
-        heading = head_block.get(NotionBlockType.HEADING1, {})
-        rich_text = heading.get("rich_text", {})
-
-        plain_text = ""
-        for e in rich_text:
-            plain_text += e.get("plain_text", "")
-        if plain_text.strip().startswith("Revised"):
-            return True
-        return False
+        if block_type == NotionBlockType.HEADING1:
+            return f"# {text}"
+        elif block_type == NotionBlockType.HEADING2:
+            return f"## {text}"
+        elif block_type == NotionBlockType.HEADING3:
+            return f"### {text}"
+        elif block_type == NotionBlockType.PARAGRAPH:
+            return text
+        elif block_type == NotionBlockType.BULLETED_LIST_ITEM:
+            return f"- {text}"
+        elif block_type == NotionBlockType.NUMBERED_LIST_ITEM:
+            return f"1. {text}"
+        elif block_type == NotionBlockType.CODE:
+            language = content.get("language", "")
+            return f"```{language}\n{text}\n```"
+        elif block_type == NotionBlockType.QUOTE:
+            return f"> {text}"
+        elif block_type == NotionBlockType.DIVIDER:
+            return "---"
+        else:
+            return text
