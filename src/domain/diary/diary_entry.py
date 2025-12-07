@@ -7,6 +7,7 @@ class DiaryEntry(BaseModel):
     title: str
     blocks: list[NotionBlock]  = Field(..., description="エントリの中身のブロックのリスト.")
 
+    @property
     def content(self) -> str:
         return "\n".join(b.plain_text for b in self.blocks)
 

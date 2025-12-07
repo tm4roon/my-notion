@@ -1,8 +1,6 @@
 import stanza
-from domain.diary.diary import Diary
 from domain.diary.diary_entry_revision import DiaryEntry
 from domain.diary.parsed_diary_entry import ParsedDiaryEntry
-from domain.language import Language
 
 class EnglishDiaryEntryParser:
     def __init__(self):

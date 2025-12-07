@@ -7,7 +7,7 @@ from .diary_entry import DiaryEntryFactory
 
 class DiaryEntryRevision(BaseModel):
     """日記エントリ（Heading2 単位のセクション）"""
-
+    title: str = Field(..., description="エントリのタイトル.")
     origin: DiaryEntry = Field(..., description="エントリの中身.")
     revised: DiaryEntry = Field(..., description="LLMで修正したエントリの中身.")
 
