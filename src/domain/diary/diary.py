@@ -7,8 +7,9 @@ from pydantic import Field
 from domain.notion import NotionBlockType
 from domain.language import Language
 
-from .diary_entry import DiaryEntry
-from .diary_entry import DiaryEntryFactory
+from .diary_entry_revision import DiaryEntryRevision
+from .diary_entry_revision import DiaryEntryRevisionFactory
+
 from .diary_page import DiaryPageFactory
 
 
@@ -18,8 +19,8 @@ class Diary(BaseModel):
     language: str = Field(default=Language.EN, description="日記の言語.")
     title: str = Field(..., description="日記のタイトル.")
     diary_date: date | None = Field(None, description="日記の日付")
-    original_entries: list[DiaryEntry] = Field(..., description="日記のエントリのリスト.")
-    revised_entries: list[DiaryEntry] = Field(..., description="LLMで修正した日記エントリ.")
+    entries: list[DiaryEntryRevision] = Field(..., description="日記のエントリの修正前後差分のリスト")
+
 
 
 class DiaryFactory:
@@ -27,40 +28,43 @@ class DiaryFactory:
 
     def __init__(self):
         self.page_factory = DiaryPageFactory()
-        self.entry_factory = DiaryEntryFactory()
+        self.entry_factory = DiaryEntryRevisionFactory()
 
     def from_notion(self, page: dict, children: dict) -> Diary:
         diary_page = self.page_factory.from_notion(page)
 
         sections = self.split_by_heading1(children)
-        original_entries = []
-        revised_entries = []
-        for section in sections:
-            if self.is_original_entry_section(section):
-                original_entries = self.entry_factory.from_notion(section)
-                continue
-            if self.is_revised_entry_section(section):
-                revised_entries = self.entry_factory.from_notion(section)
-                continue
 
+        origin_sections = [s for s in sections if self.is_origin_entry_section(s)]
+        revised_sections = [s for s in sections if self.is_revised_entry_section(s)]
+
+
+        if len(origin_sections) == 0 or len(revised_sections) == 0:
+            raise ValueError("No original entry section found in the diary page.")
+            
+        entries = self.entry_factory.from_notion(
+            origin_section=origin_sections[0],
+            revised_section=revised_sections[0],
+        )
         return Diary(
             page_id=page.get("id"),
             title=diary_page.properties.title,
             diary_date=diary_page.properties.diary_date,
-            original_entries=original_entries,
-            revised_entries=revised_entries,
+            entries=entries,
         )
 
-    def split_by_heading1(self, children: list[dict]) -> Generator[list[dict], None, None]:
+    def split_by_heading1(self, children: list[dict]) -> list[dict]:
         """Heading1 単位でブロックを分割"""
         offsets = [idx for idx, block in enumerate(children) if block["type"] == NotionBlockType.HEADING1]
 
+        ret = []
         for i in range(len(offsets)):
             s = offsets[i]
             t = offsets[i + 1] if i + 1 < len(offsets) else len(children)
-            yield list(children[s:t])
+            ret.append(children[s:t])
+        return ret
 
-    def is_original_entry_section(self, blocks: list[dict]) -> bool:
+    def is_origin_entry_section(self, blocks: list[dict]) -> bool:
         """'Entryのセクションかどうかを判定"""
         head_block = blocks[0]
         if head_block.get("type", "") != NotionBlockType.HEADING1:

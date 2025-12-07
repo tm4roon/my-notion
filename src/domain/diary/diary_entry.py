@@ -1,48 +1,30 @@
-from pydantic import BaseModel
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from domain.notion import NotionBlock
 from domain.notion import NotionBlockType
 
-
 class DiaryEntry(BaseModel):
-    """日記エントリ（Heading2 単位のセクション）"""
+    title: str
+    blocks: list[NotionBlock]  = Field(..., description="エントリの中身のブロックのリスト.")
 
-    title: str = Field(..., description="エントリのタイトル. HEADING2で与えられる文字列.")
-    origin: list[NotionBlock] = Field(..., description="エントリの中身.")
-    revised: list[NotionBlock] = Field(..., description="LLMで修正したエントリの中身.")
+    def content(self) -> str:
+        return "\n".join(b.plain_text for b in self.blocks)
 
-    @property
-    def origin_content(self) -> str:
-        return "\n".join(b.plain_text for b in self.origin)
-
-    @property
-    def revised_content(self) -> str:
-        return "\n".join(b.plain_text for b in self.revised)
 
 
 class DiaryEntryFactory:
-    def from_notion(
-            self, 
-            original_section_objects: list[dict], 
-            revised_section_objects: list[dict] = []
-        ) -> list[DiaryEntry]:
 
-        origin = [self.create_entry(blocks) for blocks in self.split_by_entry(original_section_objects)]
-        revised = [self.create_entry(blocks) for blocks in self.split_by_entry(revised_section_objects)]
-
+    def from_notion(self, obj: list[dict]) -> list[DiaryEntry]:
         ret = []
-        for org, rev in zip(origin, revised):
-            if org.title != rev.title:
-                raise ValueError("Original and Revised entries must have the same title")
+        for v in self.split_by_entry(obj):
+            blocks = self.create_entry_blocks(v)
+            if len(blocks) == 0:
+                raise ValueError("Entry must have at least one block")
             ret.append(DiaryEntry(
-                title=org.title,
-                origin=org.blocks,
-                revised=rev.blocks,
+                title=blocks[0].plain_text,
+                blocks=blocks[1:],
             ))
         return ret
-
-
 
     def split_by_entry(self, blocks: list[dict]) -> list[list[dict]]:
         """Heading2 単位でブロックを分割してエントリを生成"""
@@ -55,7 +37,7 @@ class DiaryEntryFactory:
             res.append(blocks[s:t])
         return res
 
-    def create_entry(self, obj: list[dict]) -> DiaryEntry:
+    def create_entry_blocks(self, obj: list[dict]) -> list[NotionBlock]:
         """NotionBlockのリストからDiaryEntryを生成"""
         if len(obj) == 0:
             raise ValueError("blocks must not be empty")
@@ -65,10 +47,7 @@ class DiaryEntryFactory:
             raise ValueError("first block must be HEADING2")
 
         blocks = [self.create_block(e) for e in obj]
-        return DiaryEntry(
-            title=blocks[0].plain_text,
-            blocks=blocks[1:],
-        )
+        return blocks
 
     def create_block(self, obj: dict) -> NotionBlock:
         """Notion APIのレスポンスからNotionBlockを生成"""
