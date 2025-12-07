@@ -14,6 +14,7 @@ from .diary_page import DiaryPageFactory
 
 class Diary(BaseModel):
     """日記ドメインオブジェクト"""
+    page_id: str | None = Field(None, description="NotionページID")
     language: str = Field(default=Language.EN, description="日記の言語.")
     title: str = Field(..., description="日記のタイトル.")
     diary_date: date | None = Field(None, description="日記の日付")
@@ -43,6 +44,7 @@ class DiaryFactory:
                 continue
 
         return Diary(
+            page_id=page.get("id"),
             title=diary_page.properties.title,
             diary_date=diary_page.properties.diary_date,
             original_entries=original_entries,

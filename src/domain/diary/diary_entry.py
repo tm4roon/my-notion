@@ -9,16 +9,40 @@ class DiaryEntry(BaseModel):
     """日記エントリ（Heading2 単位のセクション）"""
 
     title: str = Field(..., description="エントリのタイトル. HEADING2で与えられる文字列.")
-    blocks: list[NotionBlock] = Field(..., description="エントリの中身.")
+    origin: list[NotionBlock] = Field(..., description="エントリの中身.")
+    revised: list[NotionBlock] = Field(..., description="LLMで修正したエントリの中身.")
 
     @property
-    def content(self) -> str:
-        return "\n".join(b.plain_text for b in self.blocks)
+    def origin_content(self) -> str:
+        return "\n".join(b.plain_text for b in self.origin)
+
+    @property
+    def revised_content(self) -> str:
+        return "\n".join(b.plain_text for b in self.revised)
 
 
 class DiaryEntryFactory:
-    def from_notion(self, obj: list[dict]) -> list[DiaryEntry]:
-        return [self.create_entry(blocks) for blocks in self.split_by_entry(obj)]
+    def from_notion(
+            self, 
+            original_section_objects: list[dict], 
+            revised_section_objects: list[dict] = []
+        ) -> list[DiaryEntry]:
+
+        origin = [self.create_entry(blocks) for blocks in self.split_by_entry(original_section_objects)]
+        revised = [self.create_entry(blocks) for blocks in self.split_by_entry(revised_section_objects)]
+
+        ret = []
+        for org, rev in zip(origin, revised):
+            if org.title != rev.title:
+                raise ValueError("Original and Revised entries must have the same title")
+            ret.append(DiaryEntry(
+                title=org.title,
+                origin=org.blocks,
+                revised=rev.blocks,
+            ))
+        return ret
+
+
 
     def split_by_entry(self, blocks: list[dict]) -> list[list[dict]]:
         """Heading2 単位でブロックを分割してエントリを生成"""
